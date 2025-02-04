@@ -4,3 +4,5 @@ python-dotenv
 google.generativeai
 openpyxl
 tabulate
+bcrypt
+streamlit-authenticator
