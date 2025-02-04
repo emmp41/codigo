@@ -80,7 +80,7 @@ def auth_flow():
     name, auth_status, username = authenticator.login("Inicio de Sesión","main")
     
     if not auth_status:
-        with st.expander("🔐 Registro de Nuevos Usuarios (Solo Admin)"):
+        
             if st.session_state.get("username") == "admin":
                 new_user = st.text_input("Nuevo usuario")
                 new_pass = st.text_input("Contraseña", type="password")
@@ -94,10 +94,10 @@ def auth_flow():
                     with open(AUTH_FILE, "w") as file:
                         yaml.dump(auth_config, file)
                     st.success("Usuario creado")
-            else:
-                st.warning("Solo el admin puede crear usuarios")
-        st.stop()
-    
+            else: 
+                
+                st.stop()
+
     log_action(username, "login")
     return username
 
