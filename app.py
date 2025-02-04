@@ -191,7 +191,61 @@ def parsear_respuesta(texto, codigos_df, expected):
 
 def main_app(username):
     log_action(username, "app_access")
+    # ... (tu código actual)
     
+    # =============================================
+    # PANEL DE ADMINISTRACIÓN (Solo visible para admin)
+    # =============================================
+    if username == "admin":
+        with st.sidebar.expander("🔧 Panel de Administración"):
+            st.subheader("Gestión de Usuarios")
+            
+            # 1. Crear nuevos usuarios
+            with st.form("nuevo_usuario"):
+                nuevo_user = st.text_input("Nuevo usuario")
+                nuevo_pass = st.text_input("Contraseña", type="password")
+                if st.form_submit_button("Crear usuario"):
+                    hashed_pw = bcrypt.hashpw(nuevo_pass.encode(), bcrypt.gensalt()).decode()
+                    auth_data["credentials"]["usernames"][nuevo_user] = {
+                        "email": f"{nuevo_user}@empresa.com",
+                        "name": nuevo_user,
+                        "password": hashed_pw
+                    }
+                    with open(AUTH_FILE, "w") as file:
+                        yaml.dump(auth_data, file)
+                    st.success(f"Usuario {nuevo_user} creado")
+                    log_action(username, f"crear_usuario: {nuevo_user}")
+
+            # 2. Eliminar usuarios existentes
+            usuarios = list(auth_data["credentials"]["usernames"].keys())
+            usuarios.remove("admin")  # Prevenir auto-eliminación
+            usuario_a_eliminar = st.selectbox("Seleccionar usuario para eliminar", usuarios)
+            if st.button("Eliminar usuario"):
+                del auth_data["credentials"]["usernames"][usuario_a_eliminar]
+                with open(AUTH_FILE, "w") as file:
+                    yaml.dump(auth_data, file)
+                st.warning(f"Usuario {usuario_a_eliminar} eliminado")
+                log_action(username, f"eliminar_usuario: {usuario_a_eliminar}")
+
+            # 3. Cambiar contraseña de admin
+            with st.form("cambiar_pass_admin"):
+                current_pass = st.text_input("Contraseña actual", type="password")
+                new_pass = st.text_input("Nueva contraseña", type="password")
+                confirm_pass = st.text_input("Confirmar nueva contraseña", type="password")
+                if st.form_submit_button("Actualizar contraseña"):
+                    # Verificar contraseña actual
+                    if bcrypt.checkpw(current_pass.encode(), auth_data["credentials"]["usernames"]["admin"]["password"].encode()):
+                        if new_pass == confirm_pass:
+                            hashed_new = bcrypt.hashpw(new_pass.encode(), bcrypt.gensalt()).decode()
+                            auth_data["credentials"]["usernames"]["admin"]["password"] = hashed_new
+                            with open(AUTH_FILE, "w") as file:
+                                yaml.dump(auth_data, file)
+                            st.success("Contraseña actualizada")
+                            log_action(username, "cambio_pass_admin")
+                        else:
+                            st.error("Las contraseñas nuevas no coinciden")
+                    else:
+                        st.error("Contraseña actual incorrecta")
     st.title(f"📚 Generador de Libros de Códigos - Bienvenido {username}")
     
     archivo = st.file_uploader("Sube tu archivo Excel", type=["xlsx", "xls"])
