@@ -74,24 +74,9 @@ def log_action(username, action):
 def auth_flow():
     name, auth_status, username = authenticator.login("Inicio de Sesión", "main")
     
+    # Eliminar todo el bloque de registro anterior
     if not auth_status:
-        with st.expander("🔐 Registro de Nuevos Usuarios (Solo Admin)"):
-            if st.session_state.get("username") == "admin":
-                new_user = st.text_input("Nuevo usuario")
-                new_pass = st.text_input("Contraseña", type="password")
-                if st.button("Crear usuario"):
-                    hashed_pw = bcrypt.hashpw(new_pass.encode(), bcrypt.gensalt()).decode()
-                    auth_data["credentials"]["usernames"][new_user] = {
-                        "email": f"{new_user}@demo.com",
-                        "name": new_user,
-                        "password": hashed_pw
-                    }
-                    with open(AUTH_FILE, "w") as file:
-                        yaml.dump(auth_config, file)
-                    st.success("Usuario creado")
-            else:
-                st.warning("Solo el admin puede crear usuarios")
-        st.stop()
+        st.stop()  # Solo muestra login
     
     log_action(username, "login")
     return username
@@ -234,10 +219,62 @@ Respuestas:
 def main_app(username):
     log_action(username, "app_access")
     
+def main_app(username):
+    log_action(username, "app_access")
+    
+    # Panel de Administración solo para admin
     if username == "admin":
         with st.sidebar.expander("🔧 Panel de Administración"):
-            pass# ... (código de administración sin cambios)
-
+            st.subheader("Gestión de Usuarios")
+            
+            # 1. Crear nuevos usuarios
+            with st.form("nuevo_usuario_form"):
+                st.write("### Crear Nuevo Usuario")
+                new_user = st.text_input("Nombre de usuario")
+                new_pass = st.text_input("Contraseña", type="password")
+                if st.form_submit_button("Crear"):
+                    hashed_pw = bcrypt.hashpw(new_pass.encode(), bcrypt.gensalt()).decode()
+                    auth_data["credentials"]["usernames"][new_user] = {
+                        "email": f"{new_user}@empresa.com",
+                        "name": new_user,
+                        "password": hashed_pw
+                    }
+                    with open(AUTH_FILE, "w") as file:
+                        yaml.dump(auth_data, file)
+                    st.success("Usuario creado exitosamente")
+                    st.rerun()
+            
+            # 2. Eliminar usuarios
+            usuarios = list(auth_data["credentials"]["usernames"].keys())
+            if len(usuarios) > 1:
+                st.write("### Eliminar Usuario")
+                usuario_a_eliminar = st.selectbox("Seleccionar usuario:", [u for u in usuarios if u != "admin"])
+                if st.button("Eliminar"):
+                    del auth_data["credentials"]["usernames"][usuario_a_eliminar]
+                    with open(AUTH_FILE, "w") as file:
+                        yaml.dump(auth_data, file)
+                    st.success(f"Usuario {usuario_a_eliminar} eliminado")
+                    st.rerun()
+            
+            # 3. Cambiar contraseña de admin
+            with st.form("cambiar_pass_admin_form"):
+                st.write("### Cambiar Contraseña de Admin")
+                current_pass = st.text_input("Contraseña actual", type="password")
+                new_pass = st.text_input("Nueva contraseña", type="password")
+                confirm_pass = st.text_input("Confirmar nueva contraseña", type="password")
+                if st.form_submit_button("Actualizar"):
+                    if bcrypt.checkpw(current_pass.encode(), auth_data["credentials"]["usernames"]["admin"]["password"].encode()):
+                        if new_pass == confirm_pass:
+                            hashed_new = bcrypt.hashpw(new_pass.encode(), bcrypt.gensalt()).decode()
+                            auth_data["credentials"]["usernames"]["admin"]["password"] = hashed_new
+                            with open(AUTH_FILE, "w") as file:
+                                yaml.dump(auth_data, file)
+                            st.success("Contraseña actualizada exitosamente")
+                            st.rerun()
+                        else:
+                            st.error("Las contraseñas nuevas no coinciden")
+                    else:
+                        st.error("Contraseña actual incorrecta")
     st.title(f"📚 Generador de Libros de Códigos - Bienvenido {username}")
     
     archivo = st.file_uploader("Sube tu archivo Excel", type=["xlsx", "xls"])
@@ -310,9 +347,11 @@ def main_app(username):
                         df_resultado.to_excel(writer, sheet_name="Datos Codificados", index=False)
                     
                     status.update(label="Proceso completado!", state="complete")
+                    nombre_original = archivo.name.replace('.xlsx', '')  # Elimina la extensión
+                    nombre_final = f"{nombre_original}_codificacion.xlsx"
                     st.download_button("Descargar resultados", 
-                                     open("resultados.xlsx", "rb"), 
-                                     "codificacion_final.xlsx")
+                                    open("resultados.xlsx", "rb"), 
+                                    nombre_final)
                 
                 except Exception as e:
                     status.update(label="Error en el proceso", state="error")
