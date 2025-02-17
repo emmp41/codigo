@@ -219,9 +219,6 @@ Respuestas:
 def main_app(username):
     log_action(username, "app_access")
     
-def main_app(username):
-    log_action(username, "app_access")
-    
     # Panel de Administración solo para admin
     if username == "admin":
         with st.sidebar.expander("🔧 Panel de Administración"):
