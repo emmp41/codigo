@@ -89,7 +89,7 @@ def generar_codigos(respuestas):
     prompt = f"""Genera un libro de códigos exhaustivo para estas {len(respuestas)} respuestas siguiendo REGLAS ESTRICTAS:
     
     1. Códigos en formato C## (C01, C02...)
-    2. Mínimo 5 categorías, máximo 15
+    2. Mínimo 12 categorías, máximo 25
     3. Cada categoría debe cubrir al menos 3 respuestas
     4. Todas las respuestas DEBEN ser clasificadas
     5. PROHIBIDO usar 'Otros' o categorías residuales
